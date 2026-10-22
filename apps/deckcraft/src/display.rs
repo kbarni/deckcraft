@@ -11,13 +11,14 @@
 #[derive(Debug, PartialEq, Eq)]
 pub enum Choice {
     X11,
-    /// Let winit decide (Wayland when `WAYLAND_DISPLAY` is set).
+    /// Let winit decide (Wayland when `WAYLAND_DISPLAY` or `WAYLAND_SOCKET` is set).
     Default,
-    /// Neither `DISPLAY` nor `WAYLAND_DISPLAY`: there is nothing to open a window on.
+    /// Neither `DISPLAY` nor Wayland: there is nothing to open a window on.
     None,
 }
 
-/// Choose from the environment: `DISPLAY`, `WAYLAND_DISPLAY` and whether X11 is asked for.
+/// Choose from the environment: `DISPLAY`, the Wayland connection ([`wayland`]) and whether X11
+/// is asked for.
 pub fn choose(display: Option<&str>, wayland: Option<&str>, force_x11: bool) -> Choice {
     let display = display.is_some_and(|d| !d.is_empty());
     let wayland = wayland.is_some_and(|w| !w.is_empty());
@@ -29,10 +30,16 @@ pub fn choose(display: Option<&str>, wayland: Option<&str>, force_x11: bool) -> 
     }
 }
 
+/// The Wayland connection winit would use: `WAYLAND_DISPLAY`, or else `WAYLAND_SOCKET` (a
+/// connection handed over by whoever started DeckCraft).
+fn wayland(display: Option<String>, socket: Option<String>) -> Option<String> {
+    display.filter(|d| !d.is_empty()).or(socket)
+}
+
 /// [`choose`] for this process.
 pub fn choose_from_env() -> Choice {
     let display = std::env::var("DISPLAY").ok();
-    let wayland = std::env::var("WAYLAND_DISPLAY").ok();
+    let wayland = wayland(std::env::var("WAYLAND_DISPLAY").ok(), std::env::var("WAYLAND_SOCKET").ok());
     choose(display.as_deref(), wayland.as_deref(), std::env::var_os("DECKCRAFT_X11").is_some())
 }
 
@@ -47,6 +54,15 @@ mod tests {
         assert_eq!(choose(Some(":1.0"), Some("wayland-1"), false), Choice::Default);
         assert_eq!(choose(None, Some("wayland-0"), false), Choice::Default);
         assert_eq!(choose(Some(""), Some("wayland-0"), false), Choice::Default);
+    }
+
+    #[test]
+    fn a_wayland_socket_is_a_wayland_session() {
+        let socket = wayland(None, Some("5".into()));
+        assert_eq!(choose(Some(":0"), socket.as_deref(), false), Choice::Default);
+        assert_eq!(wayland(Some(String::new()), Some("5".into())).as_deref(), Some("5"));
+        assert_eq!(wayland(Some("wayland-0".into()), Some("5".into())).as_deref(), Some("wayland-0"));
+        assert_eq!(wayland(None, None), None);
     }
 
     #[test]
