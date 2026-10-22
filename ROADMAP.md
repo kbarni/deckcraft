@@ -131,6 +131,7 @@ app's JSON control channel (`deckcraft --control PORT`).
 
 | Date | What landed |
 |---|---|
+| 2026-10-22 | Slide Show with Presenter View, as in PowerPoint: with two screens the slides go full screen on one and Presenter View on the presenter's; with one screen only the slides show. Both windows on one screen covered one, and a covered window stalled the show at about a frame a second. In a Wayland session DeckCraft now starts on Wayland (`DECKCRAFT_X11` asks for X11), where windows go to the screen asked for |
 | 2026-10-18 | Native chart sidecar bytes move from JSON arrays into referenced ZIP entries, with shared media byte/item limits and bounded reads; older inline sidecars still load. Synthetic format regressions cover large workbooks and malformed members |
 | 2026-10-17 | Opening a file caps absurd effect sizes (glow, soft edges, shadows, reflections, on shapes, text and table text) at what Format Shape allows: a glow of 10^18 pt in a .pptx made rendering ask for 34 GB and abort |
 | 2026-10-17 | Opening a .deckcraft file whose shapes repeat an id gives the repeats fresh ids (groups, layouts and masters too), so the deck validates and edits by id find one shape |
